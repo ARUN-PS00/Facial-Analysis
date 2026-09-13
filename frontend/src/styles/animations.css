@@ -1,4 +1,3 @@
-/* Placeholder animation helpers. */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -10,4 +9,17 @@
 
 .fade-in {
   animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes floatGentle {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+
+.animate-bounce-gentle {
+  animation: floatGentle 3s ease-in-out infinite;
 }
