@@ -1,24 +1,67 @@
 import { createBrowserRouter } from 'react-router-dom'
 import App from './App'
-import Home from './pages/Home'
-import Upload from './pages/Upload'
-import Loading from './pages/Loading'
-import Result from './pages/Result'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import Dashboard from './pages/Dashboard'
+import CameraStudio from './pages/CameraStudio'
 import About from './pages/About'
 import NotFound from './pages/NotFound'
+import ProtectedRoute from './components/common/ProtectedRoute'
+import PublicOnlyRoute from './components/common/PublicOnlyRoute'
 
-// Router configuration for the app pages.
 const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
     children: [
-      { index: true, element: <Home /> },
-      { path: 'upload', element: <Upload /> },
-      { path: 'loading', element: <Loading /> },
-      { path: 'result', element: <Result /> },
-      { path: 'about', element: <About /> },
-      { path: '*', element: <NotFound /> },
+      {
+        index: true,
+        element: (
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'login',
+        element: (
+          <PublicOnlyRoute>
+            <Login />
+          </PublicOnlyRoute>
+        ),
+      },
+      {
+        path: 'register',
+        element: (
+          <PublicOnlyRoute>
+            <Register />
+          </PublicOnlyRoute>
+        ),
+      },
+      {
+        path: 'app',
+        element: (
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'camera',
+        element: (
+          <ProtectedRoute>
+            <CameraStudio />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'about',
+        element: <About />,
+      },
+      {
+        path: '*',
+        element: <NotFound />,
+      },
     ],
   },
 ])
