@@ -61,17 +61,26 @@ export class ChallengeEngine {
   nextChallenge() {
     this.currentRound++
 
+    // Only select enabled memes
     let available = LOCAL_MEME_MANIFEST.filter(
-      (m) => !this.usedMemeIds.includes(m.id)
+      (m) => m.enabled !== false && !this.usedMemeIds.includes(m.id)
     )
 
     if (available.length === 0) {
       this.usedMemeIds = []
-      available = [...LOCAL_MEME_MANIFEST]
+      available = LOCAL_MEME_MANIFEST.filter((m) => m.enabled !== false)
+    }
+
+    // Avoid picking 2 consecutive memes of identical category if other categories exist
+    if (this.currentTarget && available.length > 1) {
+      const differentCatPool = available.filter((m) => m.category !== this.currentTarget.category)
+      if (differentCatPool.length > 0) {
+        available = differentCatPool
+      }
     }
 
     const randomIndex = Math.floor(Math.random() * available.length)
-    const selected = available[randomIndex]
+    const selected = available[randomIndex] || LOCAL_MEME_MANIFEST[0]
 
     this.usedMemeIds.push(selected.id)
     this.currentTarget = selected
@@ -85,90 +94,135 @@ export class ChallengeEngine {
 
   evaluateLiveMatch(features) {
     if (!this.currentTarget || !features) {
-      return { liveChecklist: [], matchScore: 0 }
+      return { liveChecklist: [], matchScore: 0, isFullyMatched: false }
     }
 
     const { targetFeatures, difficulty = 1 } = this.currentTarget
     const checklist = targetFeatures.checklist || []
 
-    let matchedCount = 0
+    let totalItemRatioSum = 0
+
     const liveChecklist = checklist.map((item) => {
-      let isMatched = false
+      let itemRatio = 0.0
 
       switch (item.key) {
-        case 'open_mouth':
-          isMatched = features.face.jawOpen > 0.22 || features.face.z_jaw >= 3.0
+        case 'open_mouth': {
+          const jaw = (features.face && features.face.jawOpen) || 0
+          const z_jaw = (features.face && features.face.z_jaw) || 0
+          itemRatio = Math.min(1.0, Math.max(jaw / 0.15, z_jaw / 2.5))
           break
-        case 'wide_eyes':
-          isMatched = features.face.wideEyes || features.face.z_jaw >= 3.5
+        }
+        case 'wide_eyes': {
+          const wide = features.face && features.face.wideEyes
+          const z_jaw = (features.face && features.face.z_jaw) || 0
+          itemRatio = wide ? 1.0 : Math.min(1.0, Math.max(0, z_jaw / 2.5))
           break
-        case 'smile':
-          isMatched = features.face.smile > 0.35
+        }
+        case 'smile': {
+          const s = (features.face && features.face.smile) || 0
+          itemRatio = Math.min(1.0, s / 0.25)
           break
-        case 'wink':
-          isMatched = features.face.wink > 0.3
+        }
+        case 'wink': {
+          const w = (features.face && features.face.wink) || 0
+          itemRatio = Math.min(1.0, w / 0.15)
           break
-        case 'sneer':
-          isMatched = features.face.sneer > 0.05 || features.face.z_sneer >= 3.0
+        }
+        case 'sneer': {
+          const sn = (features.face && features.face.sneer) || 0
+          const z_sn = (features.face && features.face.z_sneer) || 0
+          itemRatio = Math.min(1.0, Math.max(sn / 0.03, z_sn / 2.0))
           break
-        case 'squint':
-          isMatched = features.face.squint > 0.15 || features.face.z_squint >= 3.0
+        }
+        case 'squint': {
+          const sq = (features.face && features.face.squint) || 0
+          const z_sq = (features.face && features.face.z_squint) || 0
+          itemRatio = Math.min(1.0, Math.max(sq / 0.08, z_sq / 2.0))
           break
-        case 'head_turn':
-          isMatched = features.face.turn > 0.12
+        }
+        case 'head_turn': {
+          const t = (features.face && features.face.turn) || 0
+          itemRatio = Math.min(1.0, t / 0.08)
           break
-        case 'tongue_out':
-          isMatched = features.tongue > 0.4
+        }
+        case 'tongue_out': {
+          const tg = features.tongue || 0
+          itemRatio = Math.min(1.0, tg / 0.25)
           break
-        case 'facepalm':
-          isMatched = features.hands.facepalm
+        }
+        case 'facepalm': {
+          const fp = features.hands && features.hands.facepalm
+          const hCount = (features.hands && features.hands.handCount) || 0
+          itemRatio = fp ? 1.0 : hCount > 0 ? 0.35 : 0.0
           break
-        case 'hands_up':
-          isMatched = features.hands.handUpGesture || features.hands.handsRaised
+        }
+        case 'hands_up': {
+          const hu = features.hands && (features.hands.handUpGesture || features.hands.handsRaised)
+          const ar = features.pose && features.pose.armsRaised
+          itemRatio = hu ? 1.0 : ar ? 0.75 : 0.0
           break
-        case 'elbows_up':
-          isMatched = features.pose.elbowsUp
+        }
+        case 'elbows_up': {
+          const eu = features.pose && features.pose.elbowsUp
+          const hr = features.hands && features.hands.handsRaised
+          itemRatio = eu ? 1.0 : hr ? 0.7 : 0.0
           break
-        case 'open_palm':
-          isMatched = features.hands.openPalm
+        }
+        case 'open_palm': {
+          const op = features.hands && features.hands.openPalm
+          const hCount = (features.hands && features.hands.handCount) || 0
+          itemRatio = op ? 1.0 : hCount > 0 ? 0.4 : 0.0
           break
-        case 'heart':
-          isMatched = features.hands.heartGesture
+        }
+        case 'heart': {
+          const hg = features.hands && features.hands.heartGesture
+          const hCount = (features.hands && features.hands.handCount) || 0
+          itemRatio = hg ? 1.0 : hCount >= 2 ? 0.5 : 0.0
           break
-        case 'pinch_nose':
-          isMatched = features.hands.noseClosedGesture
+        }
+        case 'pinch_nose': {
+          const nc = features.hands && features.hands.noseClosedGesture
+          const hCount = (features.hands && features.hands.handCount) || 0
+          itemRatio = nc ? 1.0 : hCount > 0 ? 0.35 : 0.0
           break
-        case 'time_out':
-          isMatched = features.hands.timeOutGesture
+        }
+        case 'motion': {
+          const energy = (features.motion && features.motion.motionEnergy) || 0
+          itemRatio = Math.min(1.0, energy / 0.02)
           break
-        case 'motion':
-          isMatched = features.motion.motionEnergy > 0.03
+        }
+        case 'face_gone': {
+          const hasFace = features.face && features.face.hasFace
+          itemRatio = !hasFace ? 1.0 : 0.0
           break
-        case 'face_gone':
-          isMatched = !features.face.hasFace
-          break
+        }
         default:
-          isMatched = false
+          itemRatio = 0.0
       }
 
-      if (isMatched) matchedCount++
-      return { ...item, matched: isMatched }
+      const clampedRatio = Math.min(1.0, Math.max(0.0, itemRatio))
+      totalItemRatioSum += clampedRatio
+
+      // Consider item matched for checklist UI when player achieves >=40% match
+      return { ...item, ratio: clampedRatio, matched: clampedRatio >= 0.4 }
     })
 
     const totalReqs = checklist.length || 1
-    const matchRatio = matchedCount / totalReqs
+    const avgMatchRatio = totalItemRatioSum / totalReqs
 
-    let rawScore = matchRatio * 85
-    if (matchRatio > 0) {
-      rawScore += (difficulty - 1) * 5 + 10
+    // Calculate score: base match ratio (0-85 pts) + difficulty scaling bonus (10-15 pts) when match is non-trivial
+    let rawScore = avgMatchRatio * 85
+    if (avgMatchRatio > 0.08) {
+      rawScore += (difficulty - 1) * 3 + 12
     }
 
     const matchScore = Math.min(100, Math.round(rawScore))
+    const isFullyMatched = liveChecklist.every((item) => item.matched)
 
     return {
       liveChecklist,
       matchScore,
-      isFullyMatched: matchedCount === totalReqs,
+      isFullyMatched,
     }
   }
 
@@ -199,12 +253,16 @@ export class ChallengeEngine {
     }
 
     let totalScore = 0
-    const categoryCounts = {}
+    const categoryScores = {}
+    let bestRound = this.sessionHistory[0]
     let malayalamCount = 0
 
     for (const h of this.sessionHistory) {
       totalScore += h.score
-      categoryCounts[h.category] = (categoryCounts[h.category] || 0) + h.score
+      categoryScores[h.category] = (categoryScores[h.category] || 0) + h.score
+      if (h.score > bestRound.score) {
+        bestRound = h
+      }
       if (h.origin === 'malayalam_cinema' || h.origin === 'malayalam') {
         malayalamCount++
       }
@@ -212,15 +270,20 @@ export class ChallengeEngine {
 
     const avgScore = Math.round(totalScore / this.sessionHistory.length)
 
+    // Identify dominant category
     let topCategory = 'chaos'
     let highestCatScore = -1
-
-    for (const [cat, score] of Object.entries(categoryCounts)) {
+    for (const [cat, score] of Object.entries(categoryScores)) {
       if (score > highestCatScore) {
         highestCatScore = score
         topCategory = cat
       }
     }
+
+    // Composite Final Performance Index:
+    // 50% Avg Score + 30% Dominant Category Score Ratio + 20% Best Round Score
+    const dominantCatRatio = Math.min(100, (highestCatScore / (totalScore || 1)) * 100)
+    const compositeIndex = Math.round(0.5 * avgScore + 0.3 * dominantCatRatio + 0.2 * bestRound.score)
 
     const archetypeTitles = {
       confused: { name: 'THE SALIM KUMAR ENERGY', icon: '💀', description: 'You somehow turned every situation into a comedy scene.' },
@@ -243,7 +306,7 @@ export class ChallengeEngine {
     let quoteList = FUNNY_ROAST_QUOTES.highAccuracy
     if (malayalamCount >= 2) {
       quoteList = FUNNY_ROAST_QUOTES.malayalamHeavy
-    } else if (avgScore < 60) {
+    } else if (avgScore < 55) {
       quoteList = FUNNY_ROAST_QUOTES.lowScore
     } else if (topCategory === 'chaos') {
       quoteList = FUNNY_ROAST_QUOTES.highChaos
@@ -256,12 +319,32 @@ export class ChallengeEngine {
     }
 
     const quote = quoteList[Math.floor(Math.random() * quoteList.length)]
-    const finalMeme = await this.memeManager.getMemeForCategory(topCategory)
+
+    // Select Final Result Meme based on composite score & dominant/best categories
+    let candidateMemes = LOCAL_MEME_MANIFEST.filter(
+      (m) => m.enabled !== false && (m.category === topCategory || m.category === bestRound.category)
+    )
+
+    if (candidateMemes.length === 0) {
+      candidateMemes = LOCAL_MEME_MANIFEST.filter((m) => m.enabled !== false)
+    }
+
+    // Filter candidate by difficulty matching performance (compositeIndex > 75 -> difficulty >= 2)
+    const targetDiff = compositeIndex > 75 ? 2 : 1
+    const diffMatchedMemes = candidateMemes.filter((m) => m.difficulty >= targetDiff)
+    const finalPool = diffMatchedMemes.length > 0 ? diffMatchedMemes : candidateMemes
+
+    // Pick a final meme, prioritizing one not already played in current session if possible
+    const playedIds = this.sessionHistory.map((h) => h.memeId)
+    const unplayedCandidates = finalPool.filter((m) => !playedIds.includes(m.id))
+    const finalMeme = unplayedCandidates.length > 0
+      ? unplayedCandidates[Math.floor(Math.random() * unplayedCandidates.length)]
+      : finalPool[Math.floor(Math.random() * finalPool.length)]
 
     return {
-      overallScore: Math.min(99, Math.max(40, avgScore)),
+      overallScore: Math.min(99, Math.max(35, compositeIndex)),
       dominantEnergy,
-      finalMeme,
+      finalMeme: finalMeme || LOCAL_MEME_MANIFEST[0],
       quote,
       history: this.sessionHistory,
     }
