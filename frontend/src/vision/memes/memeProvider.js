@@ -2,14 +2,16 @@ import { LOCAL_MEME_MANIFEST } from './memeManifest'
 
 export class LocalMemeProvider {
   getByCategory(category) {
-    const matches = LOCAL_MEME_MANIFEST.filter((m) => m.category === category)
+    const matches = LOCAL_MEME_MANIFEST.filter((m) => m.enabled !== false && m.category === category)
     if (matches.length > 0) {
       const idx = Math.floor(Math.random() * matches.length)
       return matches[idx]
     }
-    // Fallback to random local asset if category match not found
-    const fallbackIdx = Math.floor(Math.random() * LOCAL_MEME_MANIFEST.length)
-    return LOCAL_MEME_MANIFEST[fallbackIdx]
+    // Fallback to random local active asset if category match not found
+    const activeMemes = LOCAL_MEME_MANIFEST.filter((m) => m.enabled !== false)
+    const fallbackList = activeMemes.length > 0 ? activeMemes : LOCAL_MEME_MANIFEST
+    const fallbackIdx = Math.floor(Math.random() * fallbackList.length)
+    return fallbackList[fallbackIdx]
   }
 
   getById(id) {

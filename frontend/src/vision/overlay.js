@@ -113,7 +113,7 @@ export class OverlayRenderer {
     }
   }
 
-  renderHUD({ ctx, W, H, shownPose, face, hands, body, debugData, baseline, fps }) {
+  renderHUD({ ctx, W, _H, shownPose, face, hands, body, debugData, baseline, fps }) {
     ctx.save()
 
     // Draw face bounding box & landmarks
