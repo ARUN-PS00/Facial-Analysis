@@ -1,41 +1,82 @@
 import { LOCAL_MEME_MANIFEST } from './memes/memeManifest'
 import { MemeProviderManager } from './memes/memeProvider'
 
+export function getPronouns(gender = 'other') {
+  switch (gender) {
+    case 'female':
+      return {
+        subject: 'she',
+        object: 'her',
+        possessive: 'her',
+        possessiveNoun: 'hers',
+        subjectCap: 'She',
+        possessiveCap: 'Her',
+        title: 'Queen',
+        honorific: 'Femme',
+        icon: '♀️',
+      }
+    case 'male':
+      return {
+        subject: 'he',
+        object: 'him',
+        possessive: 'his',
+        possessiveNoun: 'his',
+        subjectCap: 'He',
+        possessiveCap: 'His',
+        title: 'King',
+        honorific: 'Bro',
+        icon: '♂️',
+      }
+    default:
+      return {
+        subject: 'they',
+        object: 'them',
+        possessive: 'their',
+        possessiveNoun: 'theirs',
+        subjectCap: 'They',
+        possessiveCap: 'Their',
+        title: 'Legend',
+        honorific: 'Icon',
+        icon: '⚡',
+      }
+  }
+}
+
 export const FUNNY_ROAST_QUOTES = {
   highAccuracy: [
-    "Bro didn't recreate the meme. Bro became the meme.",
-    "10/10 commitment to the bit. Unmatched aura.",
-    "The facial geometry was scary accurate.",
+    (name) => `${name}, you didn't copy the meme... You became the meme.`,
+    (name) => `${name} unlocked absolute meme energy. 10/10 commitment to the bit!`,
+    (name, p) => `${name}'s facial geometry was scary accurate. ${p.subjectCap} is built different.`,
   ],
   highChaos: [
-    "You don't recreate memes. You create incidents.",
-    "Peak unhinged energy detected. Respect.",
-    "Zero thoughts. Maximum chaos.",
+    (name, p) => `${name} doesn't recreate memes. ${p.subjectCap} creates incidents.`,
+    (name) => `Peak unhinged energy detected from ${name}. Respect.`,
+    (name) => `Zero thoughts. Maximum chaos from ${name}.`,
   ],
   highSuspicious: [
-    "Bro looks at everyone like they owe him money.",
-    "Side-eye so sharp it cut the frame.",
-    "Who hurt you to make that side-eye so natural?",
+    (name, p) => `${name} looks at everyone like they owe ${p.object} money.`,
+    (name) => `${name}'s side-eye was so sharp it cut the frame.`,
+    (name, _p) => `Who hurt ${name} to make that side-eye so natural?`,
   ],
   highDramatic: [
-    "Oscar-worthy performance. Unfortunately, nobody asked.",
-    "Every reaction needed a full cinematic universe.",
-    "The drama department is calling.",
+    (name) => `Oscar-worthy performance from ${name}! Unfortunately, nobody asked.`,
+    (name) => `Every reaction from ${name} needed a full cinematic universe.`,
+    (name) => `The drama department is calling for ${name}.`,
   ],
   highConfusion: [
-    "Nobody knows what happened. Especially you.",
-    "Aura points lost... but entertainment gained.",
-    "Bro was fighting for his life in that challenge.",
+    (name) => `Nobody knows what happened in that challenge. Especially ${name}.`,
+    (name) => `Aura points lost for ${name}... but entertainment gained!`,
+    (name, p) => `${name} was fighting for ${p.possessive} life in that challenge.`,
   ],
   lowScore: [
-    "We asked you to recreate the meme. You created a completely different meme.",
-    "Performance: questionable. Entertainment: immaculate.",
-    "Somehow you made it worse. Respect.",
+    (name, p) => `We asked ${name} to recreate the meme. ${p.subjectCap} created a completely different meme.`,
+    (name) => `Performance by ${name}: questionable. Entertainment value: immaculate.`,
+    (name) => `Somehow ${name} made it worse. Total respect.`,
   ],
   malayalamHeavy: [
-    "Certified Malayali meme energy detected. No further questions.",
-    "Malayalam cinema reaction level: Unmatched folklore.",
-    "Salim Kumar and Jagathy would be proud.",
+    (name) => `Certified Malayali meme energy detected in ${name}. No further questions.`,
+    (name) => `${name}'s Malayalam cinema reaction level: Unmatched folklore.`,
+    (name) => `Salim Kumar and Jagathy would be proud of ${name}.`,
   ],
 }
 
@@ -241,14 +282,23 @@ export class ChallengeEngine {
     })
   }
 
-  async calculateFinalSessionResults() {
+  async calculateFinalSessionResults(user = null) {
+    const name = user && user.name ? user.name.trim() : 'Player'
+    const gender = user && user.gender ? user.gender : 'other'
+    const pronouns = getPronouns(gender)
+
     if (this.sessionHistory.length === 0) {
       return {
         overallScore: 50,
-        dominantEnergy: { name: 'THE SALIM KUMAR ENERGY', icon: '💀', description: 'You somehow turned every situation into a comedy scene.' },
+        dominantEnergy: {
+          name: 'THE SALIM KUMAR ENERGY',
+          icon: '💀',
+          description: `${name} somehow turned every situation into a comedy scene.`,
+        },
         finalMeme: LOCAL_MEME_MANIFEST[0],
-        quote: "Bro didn't recreate the meme. Bro became the meme.",
+        quote: `${name}, you didn't copy the meme... You became the meme.`,
         history: [],
+        user: { name, gender },
       }
     }
 
@@ -270,7 +320,7 @@ export class ChallengeEngine {
 
     const avgScore = Math.round(totalScore / this.sessionHistory.length)
 
-    // Identify dominant category
+    // Identify dominant category (100% performance-based)
     let topCategory = 'chaos'
     let highestCatScore = -1
     for (const [cat, score] of Object.entries(categoryScores)) {
@@ -286,39 +336,72 @@ export class ChallengeEngine {
     const compositeIndex = Math.round(0.5 * avgScore + 0.3 * dominantCatRatio + 0.2 * bestRound.score)
 
     const archetypeTitles = {
-      confused: { name: 'THE SALIM KUMAR ENERGY', icon: '💀', description: 'You somehow turned every situation into a comedy scene.' },
-      suspicious: { name: 'PROFESSIONAL JAGATHY SIDE-EYE', icon: '👀', description: 'Bro looks at the world like he knows something we don\'t.' },
-      unhinged: { name: 'FAHADH FAASIL MODE', icon: '😐', description: 'Zero explanation. Maximum stare.' },
-      dramatic: { name: 'MOHANLAL DRAMA DEPARTMENT', icon: '🎭', description: 'Every reaction needed a full cinematic universe.' },
-      chaos: { name: 'CERTIFIED MALAYALI MENACE', icon: '💀', description: 'You didn\'t recreate the memes. You became local folklore.' },
-      sass: { name: 'SASS QUEEN SUPREME', icon: '💅', description: 'Unmatched side-eye and attitude.' },
-      wholesome: { name: 'WHOLESOME CHARM', icon: '✨', description: 'Immaculate positive vibes and energy.' },
-      shocked: { name: 'MAXIMUM SURPRISE', icon: '🤯', description: 'Pure unfiltered jaw-drop reaction.' },
+      confused: {
+        name: 'THE SALIM KUMAR ENERGY',
+        icon: '💀',
+        description: `${name} somehow turned every situation into a comedy scene.`,
+      },
+      suspicious: {
+        name: 'PROFESSIONAL SIDE-EYE',
+        icon: '👀',
+        description: `${name} looks at the world like ${pronouns.subject} knows something we don't.`,
+      },
+      unhinged: {
+        name: 'FAHADH FAASIL MODE',
+        icon: '😐',
+        description: `Zero explanation from ${name}. Maximum stare.`,
+      },
+      dramatic: {
+        name: 'MOHANLAL DRAMA DEPARTMENT',
+        icon: '🎭',
+        description: `Every reaction from ${name} needed a full cinematic universe.`,
+      },
+      chaos: {
+        name: 'CERTIFIED MEME MENACE',
+        icon: '💀',
+        description: `${name} didn't recreate the memes. ${pronouns.subjectCap} became local folklore.`,
+      },
+      sass: {
+        name: `SASS ${pronouns.title.toUpperCase()} SUPREME`,
+        icon: '💅',
+        description: `Unmatched side-eye and attitude from ${name}.`,
+      },
+      wholesome: {
+        name: 'WHOLESOME CHARM',
+        icon: '✨',
+        description: `Immaculate positive vibes and energy from ${name}.`,
+      },
+      shocked: {
+        name: 'MAXIMUM SURPRISE',
+        icon: '🤯',
+        description: `${name} dropped ${pronouns.possessive} jaw in pure unfiltered surprise.`,
+      },
     }
 
     const dominantEnergy = archetypeTitles[topCategory] || {
-      name: 'CERTIFIED MEME MENACE',
+      name: `${name.toUpperCase()} IS NOW OFFICIALLY A MEME LEGEND`,
       icon: '🔥',
-      description: 'Bro came here to recreate memes and accidentally became one.',
+      description: `${name} came here to recreate memes and accidentally became one.`,
     }
 
     // Select Funny Roast Quote
-    let quoteList = FUNNY_ROAST_QUOTES.highAccuracy
+    let quotePool = FUNNY_ROAST_QUOTES.highAccuracy
     if (malayalamCount >= 2) {
-      quoteList = FUNNY_ROAST_QUOTES.malayalamHeavy
+      quotePool = FUNNY_ROAST_QUOTES.malayalamHeavy
     } else if (avgScore < 55) {
-      quoteList = FUNNY_ROAST_QUOTES.lowScore
+      quotePool = FUNNY_ROAST_QUOTES.lowScore
     } else if (topCategory === 'chaos') {
-      quoteList = FUNNY_ROAST_QUOTES.highChaos
+      quotePool = FUNNY_ROAST_QUOTES.highChaos
     } else if (topCategory === 'suspicious') {
-      quoteList = FUNNY_ROAST_QUOTES.highSuspicious
+      quotePool = FUNNY_ROAST_QUOTES.highSuspicious
     } else if (topCategory === 'dramatic') {
-      quoteList = FUNNY_ROAST_QUOTES.highDramatic
+      quotePool = FUNNY_ROAST_QUOTES.highDramatic
     } else if (topCategory === 'confused') {
-      quoteList = FUNNY_ROAST_QUOTES.highConfusion
+      quotePool = FUNNY_ROAST_QUOTES.highConfusion
     }
 
-    const quote = quoteList[Math.floor(Math.random() * quoteList.length)]
+    const rawQuote = quotePool[Math.floor(Math.random() * quotePool.length)]
+    const quote = typeof rawQuote === 'function' ? rawQuote(name, pronouns) : rawQuote
 
     // Select Final Result Meme based on composite score & dominant/best categories
     let candidateMemes = LOCAL_MEME_MANIFEST.filter(
@@ -347,6 +430,8 @@ export class ChallengeEngine {
       finalMeme: finalMeme || LOCAL_MEME_MANIFEST[0],
       quote,
       history: this.sessionHistory,
+      user: { name, gender },
     }
   }
 }
+

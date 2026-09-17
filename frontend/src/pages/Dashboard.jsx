@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { LOCAL_MEME_MANIFEST } from '../vision/memes/memeManifest'
 import { Sparkles, Trophy, Activity, Sliders, ShieldCheck } from 'lucide-react'
 
 export default function Dashboard() {
+  const { user } = useAuth()
 
   return (
     <div className="space-y-8 py-6">
@@ -14,7 +16,7 @@ export default function Dashboard() {
           </div>
 
           <h1 className="text-3xl font-extrabold text-white sm:text-5xl tracking-tight">
-            MEME RECREATOR
+            WELCOME, {user?.name ? user.name.toUpperCase() : 'PLAYER'}! 🎭
           </h1>
 
           <p className="text-gray-200 text-base sm:text-lg font-medium leading-relaxed">

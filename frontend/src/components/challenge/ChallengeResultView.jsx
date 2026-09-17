@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { RotateCcw, Trophy, Sparkles } from 'lucide-react'
+import { RotateCcw, Trophy, Sparkles, Smile } from 'lucide-react'
 
 export default function ChallengeResultView({ results, onPlayAgain }) {
-  const { overallScore, dominantEnergy, finalMeme, quote } = results
+  const { overallScore, dominantEnergy, finalMeme, quote, user } = results
 
   const [revealStage, setRevealStage] = useState(0) // 0: Analyzing, 1: Metrics, 2: Final Reveal
 
@@ -16,6 +16,7 @@ export default function ChallengeResultView({ results, onPlayAgain }) {
   }, [])
 
   const finalMemeSrc = finalMeme?.asset || finalMeme?.path
+  const playerName = user?.name ? user.name.trim() : 'PLAYER'
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 py-6 px-4">
@@ -28,7 +29,7 @@ export default function ChallengeResultView({ results, onPlayAgain }) {
 
           <div className="space-y-3">
             <h2 className="text-3xl font-black text-purple-300 tracking-wider">
-              ANALYZING YOUR CRIMES...
+              ANALYZING {playerName.toUpperCase()}'S PERFORMANCE...
             </h2>
             {revealStage >= 1 && (
               <div className="space-y-2 text-sm font-mono text-emerald-400 font-bold">
@@ -41,14 +42,20 @@ export default function ChallengeResultView({ results, onPlayAgain }) {
         </div>
       ) : (
         <div className="space-y-8 animate-fade-in">
+          {/* Personalized Greeting Header */}
+          <div className="rounded-2xl border border-purple-500/30 bg-purple-950/40 p-4 text-center text-sm font-semibold text-purple-200 flex items-center justify-center gap-2">
+            <Smile className="h-4 w-4 text-emerald-400" />
+            Hey <span className="font-extrabold text-white">{playerName}</span> 👋 Here is your official Meme Recreator evaluation:
+          </div>
+
           {/* Main Huge Final Verdict Card */}
           <div className="relative overflow-hidden rounded-3xl border-4 border-purple-500/50 bg-gradient-to-br from-gray-950 via-purple-950/80 to-emerald-950/80 p-8 sm:p-10 shadow-2xl text-center space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full bg-purple-500/20 px-5 py-1.5 text-xs font-black text-purple-300 border border-purple-400/40 uppercase tracking-widest">
-              <Trophy className="h-4 w-4 text-amber-400" /> FINAL VERDICT
+              <Trophy className="h-4 w-4 text-amber-400" /> VERDICT FOR {playerName.toUpperCase()}
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-lg font-bold text-gray-300 uppercase tracking-widest">YOU ARE</h3>
+              <h3 className="text-lg font-bold text-gray-300 uppercase tracking-widest">ARCHETYPE UNLOCKED</h3>
               <h1 className="text-4xl font-black text-white sm:text-6xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-purple-300 to-amber-300">
                 {dominantEnergy.icon} {dominantEnergy.name}
               </h1>
