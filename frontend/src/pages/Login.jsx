@@ -69,7 +69,7 @@ export default function Login() {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Arun, Elsa, Alex..."
+                placeholder="Enter your name"
                 className="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-sm font-medium"
               />
             </div>
