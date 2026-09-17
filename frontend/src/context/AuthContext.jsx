@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useEffect } from 'react'
 
 const AuthContext = createContext(null)
 
-const STORAGE_USERS_KEY = 'facial_analysis_users'
 const STORAGE_SESSION_KEY = 'facial_analysis_session'
 
 export function AuthProvider({ children }) {
@@ -22,54 +21,18 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  const getUsers = () => {
-    try {
-      const users = localStorage.getItem(STORAGE_USERS_KEY)
-      return users ? JSON.parse(users) : []
-    } catch {
-      return []
-    }
-  }
-
-  const register = (name, email, password) => {
-    const users = getUsers()
-    const existing = users.find((u) => u.email.toLowerCase() === email.toLowerCase())
-    if (existing) {
-      throw new Error('An account with this email already exists.')
+  const startSession = (name, gender = 'other') => {
+    if (!name || !name.trim()) {
+      throw new Error('Please enter your name to start.')
     }
 
-    const newUser = {
+    const sessionUser = {
       id: 'usr_' + Date.now(),
-      name,
-      email: email.toLowerCase(),
-      password, // Note: Prototype storage for local demonstration
+      name: name.trim(),
+      gender: gender || 'other',
       createdAt: new Date().toISOString(),
     }
 
-    users.push(newUser)
-    localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(users))
-
-    const sessionUser = { id: newUser.id, name: newUser.name, email: newUser.email }
-    localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(sessionUser))
-    setUser(sessionUser)
-    return sessionUser
-  }
-
-  const login = (email, password) => {
-    const users = getUsers()
-    const found = users.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    )
-
-    if (!found) {
-      // For smooth demo experience, if no users exist yet, allow quick demo login
-      if (users.length === 0 && email && password) {
-        return register(email.split('@')[0] || 'User', email, password)
-      }
-      throw new Error('Invalid email or password.')
-    }
-
-    const sessionUser = { id: found.id, name: found.name, email: found.email }
     localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(sessionUser))
     setUser(sessionUser)
     return sessionUser
@@ -86,8 +49,7 @@ export function AuthProvider({ children }) {
         user,
         isAuthenticated: Boolean(user),
         loading,
-        login,
-        register,
+        startSession,
         logout,
       }}
     >

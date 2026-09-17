@@ -15,7 +15,10 @@ import CalibrationModal from '../camera/CalibrationModal'
 import { OverlayRenderer } from '../../vision/overlay'
 import { AlertTriangle, Sparkles, Trophy } from 'lucide-react'
 
+import { useAuth } from '../../context/AuthContext'
+
 export default function MemeChallengeView() {
+  const { user } = useAuth()
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
 
@@ -202,7 +205,7 @@ export default function MemeChallengeView() {
             } else {
               // 4 Rounds Completed -> Show Final Results
               setIsPlaying(false)
-              engine.calculateFinalSessionResults().then((res) => {
+              engine.calculateFinalSessionResults(user).then((res) => {
                 setFinalResults(res)
                 stopCamera()
               })
@@ -232,7 +235,7 @@ export default function MemeChallengeView() {
     }
 
     animFrameIdRef.current = requestAnimationFrame(processFrame)
-  }, [isStreaming, isPlaying, challengeState, baseline, startNextRound, stopCamera, isHudVisible, matchScore])
+  }, [isStreaming, isPlaying, challengeState, baseline, startNextRound, stopCamera, isHudVisible, matchScore, user])
 
   useEffect(() => {
     if (isStreaming) {
